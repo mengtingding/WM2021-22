@@ -38,7 +38,7 @@ set.seed(10)
 DivideData <- createDataPartition(Vowel$Class,p=0.75,list=FALSE)
 train <- Vowel[DivideData,]
 test <- Vowel[-DivideData,]
-preprocessing <- train %>% preProcess(method=c("center",'scale'))
+preprocessing <- train %>% preProcess(method=c("center",'scale')) # scale features help them to contribute equally to the model
 traintransformed <- preprocessing %>% predict(train)
 testtransformed <- preprocessing %>% predict(test)
 

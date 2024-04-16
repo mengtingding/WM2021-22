@@ -1,0 +1,207 @@
+---
+title: "Stochastic Modeling Assignment 4"
+author: "Mengting Ding, Vanessa Guzman, Zouzi Qi, Nash Kleisner"
+date: "12/3/2021"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r}
+rm(list=ls())
+library(dplyr)
+library(ggplot2)
+```
+
+## 1)
+```{r}
+PStar <- 1.5
+Phi <- -0.4
+Prices <- c(1.5)
+set.seed(13)
+et <- c()
+for (i in 1:10000){
+  shock <- rnorm(1,0,0.08)
+  et <- c(et,shock)
+  Prices <- c(Prices,PStar*(1-Phi)+Phi*Prices[i-1]+shock)}
+
+Phi_0 <- 0
+Prices_0 <- c(1.5)
+set.seed(13)
+for (i in 1:10000){
+  shock <- rnorm(1,0,0.08)
+  Prices_0 <- c(Prices_0,PStar*(1-Phi_0)+Phi_0*Prices_0[i-1]+shock)}
+
+Phi_1 <- 1
+Prices_1 <- c(1.5)
+set.seed(13)
+et <- c()
+for (i in 1:10000){
+  shock <- rnorm(1,0,0.08)
+  et <- c(et,shock)
+  Prices_1 <- c(Prices_1,PStar*(1-Phi_1)+Phi_1*Prices_1[i-1]+shock)}
+```
+
+$$p_t = p^\star(1-\phi)+\phi p_{t-1}+\epsilon_t$$
+
+## 2)
+```{r,fig.keep="all"}
+par(mar=c(3,6,3,3))
+par(mfrow=c(3,1))
+plot(Prices[1:50]) %>% abline(h=mean(Prices[1:50]))
+plot(Prices_0[1:50]) %>% abline(h=mean(Prices_0[1:50]))
+plot(Prices_1[1:50]) %>% abline(h=mean(Prices_1[1:50]))
+```
+  
+Our data series looks stationary as the data points are within fairly equal distances from the mean.
+Phi equals to 0 has no noise filtered as P star is in full effect.
+Phi equals to 1 has more noise filtered out as there is no multiplier effect with P star, thus it is more effective in predicting prices.
+
+## 3)
+```{r, warning=FALSE}
+library(forecast)
+par(mar=c(3,3,3,3))
+par(mfrow=c(2,1))
+Acf(Prices,lag.max=10,plot=TRUE,type="correlation", ci=0.99, main="Acf Series Prices")
+Pacf(Prices,lag.max=10,plot=TRUE, ci=0.99, main="Pacf Series Prices")
+```
+  
+#### Statistically significant
+Acf has 3 statistically significant correlations.
+Pacf has 1 statistically significant correlation.  
+
+#### Decaying behavior
+Acf shows an exponential decay to zero as the lag increases.
+Pacf shows a rapid decay to zero as the lag increases.  
+
+#### Correlations alternating in sign
+Both Acf and Pacf oscillate indicating that the correlations alternate in sign.
+
+## 4)
+```{r, warning=FALSE}
+library(dynlm)
+series <- ts(Prices, frequency=12)
+options(scipen=9999)
+dynlm(Prices~L(Prices,-1))
+```
+
+Intercept: -0.000000000000003126  
+Slope: 1
+
+## 5)
+```{r} 
+avocado <- read.csv("avocado(5).csv")
+set.seed(10)
+Avo_Prices <- ts(avocado$Avocado_Prices,start = c(2018,1),frequency = 52)
+head(Avo_Prices)
+```
+
+
+## 6)
+```{r}
+p <- plot(Avo_Prices) %>% abline(h=mean(Avo_Prices))
+mean(Avo_Prices)
+```
+The time mean of the series is 1.557413.
+
+## 7)
+```{r}
+library(forecast)
+par(mar=c(3,3,3,3))
+par(mfrow=c(2,1))
+Acf(Avo_Prices, plot=TRUE, lag.max=10, ci=0.99, main="Acf Series Avo_Prices")
+Pacf(Avo_Prices, plot=TRUE, lag.max=10, ci=0.99, main="Pacf Series Avo_Prices")
+```
+  
+#### Statistically significant
+All of the correlations of Acf here are statistically significant here whereas there were only
+3 statistically significant correlations in 3).
+Both Pacfs in 3) and here only have 1 statistically significant correlation.
+
+#### Decaying behavior  
+Acf 3) decays faster than Acf decays here.
+Pacf in 3) seems to decay just as quickly as Pacf here.
+
+#### Correlations alternating in sign  
+Acf correlations in 3) alternated in sign but Acf correlations here are all positive (therefore do not alternate in sign). 
+The single statistically significant correlation in Pacf in 3) is negative whereas the 
+single statistically significant correlation in Pacf in 7) is positive.
+
+## 8)
+```{r}
+library(forecast)
+AR_1 <- Arima(Avo_Prices, order=c(1,0,0))
+AR_1
+```
+The suggested value of Phi is 0.8822.
+The implied long run equilibrium price is $1.5591.
+
+## 9)
+```{r}
+PStar <- 1.5591
+Phi <- 0.8822
+Simulated_Prices <- c(1.5591)
+set.seed(13)
+et <- c()
+for (i in 1:143){
+  shock <- rnorm(1,0,0.08)
+  et <- c(et,shock)
+  Simulated_Prices <- c(Simulated_Prices,PStar*(1-Phi)+Phi*Simulated_Prices[i-1]+shock)
+}
+new_ts <- ts(Simulated_Prices,frequency = 52,start=c(2018,1))
+plot(new_ts) %>% abline(h=mean(new_ts))
+(mean(new_ts))
+par(mar=c(3,3,3,3))
+par(mfrow=c(2,1))
+Acf(new_ts, lag.max=10, ci=0.99, main="New Series Acf")
+Pacf(new_ts, lag.max=10, ci=0.99, main="New Series Pacf")
+```
+  
+There are only 4 statistically significant correlations in Acf here whereas 
+all of the correlations of Acf in 7) are statistically significant. However, all 
+correlations of both Acfs are positive.
+
+The ACF plot looks fairly the same here as it does in 7) where the first correlation
+of each is positive and significant and the rest of the correlations are oscillating
+and not significant.
+
+## 10)
+```{r}
+res <- AR_1$residuals
+par(mar=c(3,3,3,3))
+par(mfrow=c(2,1))
+Acf(res,lag.max=10, ci=0.99, main="Residual Series Acf")
+Pacf(res,lag.max=10, ci=0.99, main="Residual Series Pacf")
+#white noise process
+Box.test(res, type=c("Ljung"),lag=10)
+```
+  
+Though both plots have correlations alternating in sign, there are no significant
+lags in either of the plots.
+
+ACF correlations in 7) are all statistically significant and ACF correlations here are all not statistically significant.
+ACF correlations in 7) are all positive and ACF correlations here alternate in sign.
+
+PACF in 7) has 1 statistically significant correlation and PACF correlations here are all not statistically significant.
+PACF correlations both in 7) and here alternate in sign.
+
+The p-value of 0.2848 is high, so we have to reject the null hypothesis,
+meaning that the model shows a lack of fit. There is no discernible
+pattern in the residuals, meaning that the residuals are random, which is what we would prefer to have.
+
+## 11)
+```{r}
+forecast1 <- forecast(AR_1,h=5)
+#length(forecast1)
+forecast1
+```
+
+## 12)
+```{r}
+plot(forecast1)
+```

@@ -1,0 +1,174 @@
+---
+title: "Stochastic Modelling asm 4"
+author: "mengting ding"
+date: "12/3/2021"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+
+```{r}
+rm(list=ls())
+library(dplyr)
+library(ggplot2)
+```
+
+## 1)
+```{r Step 1}
+PStar <- 1.5
+Phi <- -0.4
+Prices <- c(1.5)
+set.seed(13)
+et <- c()
+for (i in 1:10000){
+  shock <- rnorm(1,0,0.08)
+  et <- c(et,shock)
+  Prices <- c(Prices,PStar*(1-Phi)+Phi*Prices[i-1]+shock)
+}
+
+Phi_0 <- 0
+Prices_0 <- c(1.5)
+set.seed(13)
+for (i in 1:10000){
+  shock <- rnorm(1,0,0.08)
+  Prices_0 <- c(Prices_0,PStar*(1-Phi_0)+Phi_0*Prices_0[i-1]+shock)
+}
+
+Phi_1 <- 1
+Prices_1 <- c(1.5)
+set.seed(13)
+et <- c()
+for (i in 1:10000){
+  shock <- rnorm(1,0,0.08)
+  et <- c(et,shock)
+  Prices_1 <- c(Prices_1,PStar*(1-Phi_1)+Phi_1*Prices_1[i-1]+shock)
+}
+```
+
+$$p_t = p^\star(1-\phi)+\phi p_{t-1}+\epsilon_t$$
+
+## 2)
+```{r Step 2,fig.keep="all"}
+plot(Prices[1:50]) %>% abline(h=mean(Prices[1:50]))
+plot(Prices_0[1:50]) %>% abline(h=mean(Prices_0[1:50]))
+plot(Prices_1[1:50]) %>% abline(h=mean(Prices_1[1:50]))
+```
+
+Prices with phi equals to 1 is not stationary as compared to the prices where phi is 0 or -0.4.
+Phi equals to 1 has more noise filtered out than thus more effective on predicting the prices.
+
+## 3)
+```{r Step 3}
+library(forecast)
+Acf(Prices,lag.max=10,plot=TRUE,type="correlation", ci=0.99)
+Pacf(Prices,lag.max=10,plot=TRUE, ci=0.99)
+```
+
+there are 3 correlations are statistically significant and there is a decaying behavior for ACF. 
+There is 1 significant correlations in PACF,
+
+## 4)
+```{r Step 4}
+library(dynlm)
+dynlm(Prices~L(Prices,-1))
+```
+
+Intercept:  -3.126e-15
+slope: 1
+
+## 5)
+```{r Step 5} 
+avocado <- read.csv("avocado.csv")
+set.seed(10)
+Avo_Prices <- ts(avocado$Avocado_Prices,start = c(2018,1),frequency = 52)
+head(Avo_Prices)
+```
+
+
+## 6)
+```{r Step 6}
+p <- plot(Avo_Prices) %>% abline(h=mean(Avo_Prices))
+mean(Avo_Prices)
+```
+
+The time mean is 1.557413
+
+## 7)
+```{r Step 7}
+library(forecast)
+Acf(Avo_Prices,plot=TRUE,lag.max = 10, ci=0.99)
+Pacf(Avo_Prices,plot=TRUE, lag.max=10, ci=0.99)
+```
+
+ACF in 3) alternated but ACF plot for avocado prices doesn't alternate. 
+PACF in 3) and 7) both have 1 statistically significant observation. 
+
+## 8)
+```{r step 8}
+library(forecast)
+AR_1 <- Arima(Avo_Prices, order=c(1,0,0))
+AR_1
+```
+The suggested Phi is 0.8822 and the output of ARIMA model implied that the long run equilibrium price is 1.5591.
+
+## 9)
+```{r Step 9}
+
+PStar <- 1.5
+Phi <- 0.8822
+new_Prices <- c(1.5591)
+set.seed(13)
+et <- c()
+for (i in 1:10000){
+  shock <- rnorm(1,0,0.08)
+  et <- c(et,shock)
+  new_Prices <- c(new_Prices,PStar*(1-Phi)+Phi*new_Prices[i-1]+shock)
+}
+new_ts <- ts(new_Prices,frequency = 52,start=c(2018,1))
+plot(new_ts) %>% abline(h=mean(new_ts))
+(mean(new_ts))
+Acf(new_ts, lag.max=10, ci=0.99)
+Pacf(new_ts,lag.max=10,ci=0.99)
+```
+
+The patterns in 7) are different from 9). The ACF plot looks the same as the ACF plot in question 7. 
+
+## 10)
+```{r Step 10}
+res <- AR_1$residuals
+Acf(res,lag.max=10, ci=0.99)
+Pacf(res,lag.max=10, ci=0.99)
+```
+
+There are no significant lags.
+
+## 11)
+```{r step 11}
+
+forecast1 <- forecast(AR_1,h=5)
+length(forecast1)
+```
+
+## 12)
+```{r Step 12}
+plot(avocado$Avocado_Prices)
+plot(forecast1)
+```
+
+
+
+
+
+
+
+
+
+
+
+

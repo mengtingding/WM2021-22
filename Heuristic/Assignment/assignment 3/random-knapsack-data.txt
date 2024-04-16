@@ -1,0 +1,25 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr  6 21:45:59 2022
+
+@author: dylan
+"""
+
+import random
+
+cap = random.randrange(70, 100)
+
+items = []
+
+for i in range(30):
+    itemno = f"Item {i + 1}"
+    itemweight = random.randrange(10, 60)
+    itemval = random.randrange(1,100)
+    item = tuple([itemno, itemweight, itemval])
+    items.append(item)
+    
+items = tuple(items)
+
+print(f"cap = {cap}")
+print(f"items = {items}")
+    
